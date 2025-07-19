@@ -980,8 +980,8 @@
             <div class="function-section">
                 <h4>🎯 工作准备</h4>
                 <div class="time-controls">
-                    <label for="startTime">开始时间：</label>
-                    <input type="time" id="startTime">
+            <label for="startTime">开始时间：</label>
+            <input type="time" id="startTime">
                     <button onclick="generateSchedule()" class="btn-primary">生成时间表</button>
                     <button onclick="useCurrentTime()" class="btn-secondary">使用当前时间</button>
                 </div>
@@ -1024,15 +1024,15 @@
         <div class="tasks-section">
             <div class="function-section">
                 <h4>📋 今日目标任务</h4>
-                <div class="task-controls">
-                    <div class="task-counter">
-                        <label for="taskCount">任务数量：</label>
-                        <input type="number" id="taskCount" value="5" min="1" max="20">
+            <div class="task-controls">
+                <div class="task-counter">
+                    <label for="taskCount">任务数量：</label>
+                    <input type="number" id="taskCount" value="5" min="1" max="20">
                         <button onclick="updateTaskCount()" class="btn-update">更新任务</button>
-                    </div>
                 </div>
-                <div class="tasks-container" id="tasksContainer">
-                    <!-- 任务项将在这里动态生成 -->
+            </div>
+            <div class="tasks-container" id="tasksContainer">
+                <!-- 任务项将在这里动态生成 -->
                 </div>
             </div>
         </div>
@@ -1097,9 +1097,9 @@
                     <h4>🚀 明日改进点</h4>
                     <textarea class="textarea-full" id="improvements" placeholder="明天可以改进的地方..."></textarea>
                 </div>
+                </div>
             </div>
         </div>
-    </div>
     </div>
 
     <script>
