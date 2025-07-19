@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务下拉框测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .task-input {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .task-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .task-input-cell {
+            position: relative;
+        }
+        .task-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>任务下拉框功能测试</h1>
+    
+    <div class="test-section">
+        <h3>1. 设置任务</h3>
+        <div>
+            <label>任务数量：</label>
+            <input type="number" id="taskCount" value="3" min="1" max="20">
+            <button onclick="updateTaskCount()">更新任务</button>
+        </div>
+        <div id="tasksContainer">
+            <!-- 任务将在这里生成 -->
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 测试下拉框</h3>
+        <button onclick="generateTestTable()">生成测试表格</button>
+        <div id="testTable"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 测试结果</h3>
+        <button onclick="testTaskSelection()">测试任务选择</button>
+        <div id="testResult" class="result"></div>
+    </div>
+
+    <script>
+        let taskData = {};
+        
+        // 更新任务数量
+        function updateTaskCount() {
+            const taskCount = parseInt(document.getElementById('taskCount').value);
+            const container = document.getElementById('tasksContainer');
+            
+            if (taskCount < 1 || taskCount > 20) {
+                alert('任务数量应该在1-20之间！');
+                document.getElementById('taskCount').value = Math.min(Math.max(taskCount, 1), 20);
+                return;
+            }
+            
+            // 保存现有任务数据
+            saveCurrentTaskData();
+            
+            // 清空容器
+            container.innerHTML = '';
+            
+            // 生成新的任务项
+            for (let i = 1; i <= taskCount; i++) {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = 'task-input';
+                taskDiv.innerHTML = `
+                    <input type="checkbox" id="task${i}">
+                    <input type="text" placeholder="任务${i}：例如 完成季度报告的数据分析部分" id="taskText${i}">
+                `;
+                container.appendChild(taskDiv);
+                
+                // 恢复之前的数据（如果存在）
+                if (taskData[i]) {
+                    document.getElementById(`task${i}`).checked = taskData[i].checked;
+                    document.getElementById(`taskText${i}`).value = taskData[i].text;
+                }
+            }
+            
+            // 更新任务选项下拉框
+            updateTaskOptions();
+        }
+        
+        // 保存当前任务数据
+        function saveCurrentTaskData() {
+            const existingTasks = document.querySelectorAll('[id^="task"]:not([id*="Text"])');
+            existingTasks.forEach(checkbox => {
+                const taskId = checkbox.id.replace('task', '');
+                const textInput = document.getElementById(`taskText${taskId}`);
+                if (textInput) {
+                    taskData[taskId] = {
+                        checked: checkbox.checked,
+                        text: textInput.value
+                    };
+                }
+            });
+        }
+        
+        // 更新任务选项
+        function updateTaskOptions() {
+            const taskSelects = document.querySelectorAll('.task-select');
+            const taskCount = parseInt(document.getElementById('taskCount').value);
+            
+            taskSelects.forEach(select => {
+                // 保存当前选中的值
+                const currentValue = select.value;
+                
+                // 清空现有选项（保留第一个默认选项）
+                select.innerHTML = '<option value="">选择任务或手动输入...</option>';
+                
+                // 添加任务选项
+                for (let i = 1; i <= taskCount; i++) {
+                    const taskTextElement = document.getElementById(`taskText${i}`);
+                    if (taskTextElement && taskTextElement.value.trim()) {
+                        const option = document.createElement('option');
+                        option.value = taskTextElement.value.trim();
+                        option.textContent = `任务${i}：${taskTextElement.value.trim()}`;
+                        select.appendChild(option);
+                    }
+                }
+                
+                // 添加手动输入选项
+                const manualOption = document.createElement('option');
+                manualOption.value = 'manual';
+                manualOption.textContent = '✏️ 手动输入...';
+                select.appendChild(manualOption);
+                
+                // 恢复之前选中的值
+                if (currentValue) {
+                    select.value = currentValue;
+                }
+            });
+        }
+        
+        // 处理任务选择
+        function handleTaskSelect(selectElement) {
+            const taskInput = selectElement.parentElement.querySelector('.task-input');
+            const selectedValue = selectElement.value;
+            
+            if (selectedValue === 'manual') {
+                // 切换到手动输入模式
+                selectElement.style.display = 'none';
+                taskInput.style.display = 'block';
+                taskInput.focus();
+            } else if (selectedValue) {
+                // 选择了具体任务，填充到输入框
+                taskInput.value = selectedValue;
+                taskInput.style.display = 'block';
+                selectElement.style.display = 'none';
+            }
+        }
+        
+        // 生成测试表格
+        function generateTestTable() {
+            const tableContainer = document.getElementById('testTable');
+            tableContainer.innerHTML = `
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr>
+                            <th style="border: 1px solid #ddd; padding: 8px;">时间段</th>
+                            <th style="border: 1px solid #ddd; padding: 8px;">任务内容</th>
+                            <th style="border: 1px solid #ddd; padding: 8px;">状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px;">09:00-09:25</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">
+                                <div class="task-input-cell">
+                                    <select class="task-select" onchange="handleTaskSelect(this)">
+                                        <option value="">选择任务或手动输入...</option>
+                                    </select>
+                                    <input type="text" class="task-input" placeholder="具体任务内容..." style="display: none;">
+                                </div>
+                            </td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">⭕</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px;">09:30-09:55</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">
+                                <div class="task-input-cell">
+                                    <select class="task-select" onchange="handleTaskSelect(this)">
+                                        <option value="">选择任务或手动输入...</option>
+                                    </select>
+                                    <input type="text" class="task-input" placeholder="具体任务内容..." style="display: none;">
+                                </div>
+                            </td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">⭕</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+            
+            // 更新任务选项
+            updateTaskOptions();
+        }
+        
+        // 测试任务选择
+        function testTaskSelection() {
+            const taskSelects = document.querySelectorAll('.task-select');
+            const taskInputs = document.querySelectorAll('.task-input');
+            
+            let result = '测试结果：\n\n';
+            
+            taskSelects.forEach((select, index) => {
+                result += `下拉框 ${index + 1}：\n`;
+                result += `- 选项数量：${select.options.length}\n`;
+                result += `- 当前选中：${select.value}\n`;
+                
+                if (taskInputs[index]) {
+                    result += `- 输入框值：${taskInputs[index].value}\n`;
+                    result += `- 输入框显示：${taskInputs[index].style.display}\n`;
+                }
+                result += '\n';
+            });
+            
+            document.getElementById('testResult').textContent = result;
+        }
+        
+        // 页面加载时初始化
+        window.onload = function() {
+            updateTaskCount();
+        };
+    </script>
+</body>
+</html> 
