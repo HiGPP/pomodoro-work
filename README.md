@@ -1,113 +1,109 @@
-# 🍅 番茄工作法追踪器
+# 🍅 Pomodoro Tracker
 
-## 📦 项目简介
+## 📦 Project Overview
 
-本项目是一个基于浏览器的番茄工作法追踪工具，支持多设备访问、数据持久化、任务同步、Markdown/JSON导出等功能。适合个人和团队高效时间管理。
+This is a browser-based Pomodoro Technique tracker designed for efficient time management. It supports multi-device access, persistent local storage, task synchronization, Markdown/JSON export, and more. Ideal for both personal and team productivity.
 
 ---
 
-## 🚀 快速启动
+## 🚀 Quick Start
 
-### Windows 用户
+### For Windows Users
 
-1. 双击 `启动本地服务器.bat`
-2. 浏览器访问：  
-   - 本机访问：http://localhost:8080/番茄工作表.html  
-   - 局域网访问：http://你的电脑IP:8080/番茄工作表.html
+1. Double-click `start_server.bat` (Start Local Server)
+2. Open your browser and visit:
+   - Local: http://localhost:8080/pomodoro.html
+   - LAN:   http://<your-computer-ip>:8080/pomodoro.html
 
-### Mac/Linux 用户
+### For Mac/Linux Users
 
-1. 打开终端，进入项目目录
-2. 赋予脚本执行权限（首次使用）：
+1. Open a terminal and navigate to the project directory
+2. Grant execute permission (first time only):
    ```bash
-   chmod +x 启动本地服务器.sh
+   chmod +x start_server.sh
    ```
-3. 运行脚本：
+3. Run the script:
    ```bash
-   ./启动本地服务器.sh
+   ./start_server.sh
    ```
-4. 浏览器访问同上
+4. Open your browser and visit as above
 
 ---
 
-## 📁 主要文件说明
+## 📁 Main Files
 
-| 文件名                 | 说明                       |
-|------------------------|----------------------------|
-| 番茄工作表.html        | 主应用页面                 |
-| 启动本地服务器.bat     | Windows一键启动脚本        |
-| 启动本地服务器.sh      | Mac/Linux一键启动脚本      |
-| 完整示例数据.md        | 示例数据与格式说明         |
-| 手机访问说明_8080端口.txt | 手机/局域网访问说明     |
-
----
-
-## 🖥️ 环境要求
-
-- **Python 3**（用于本地HTTP服务器，推荐3.6及以上）
-- 支持的浏览器（Chrome/Edge/Firefox/Safari等）
-
-> 无需安装任何第三方依赖，无需Node.js，无需Flask。
+| Filename           | Description                        |
+|--------------------|------------------------------------|
+| pomodoro.html      | Main application page               |
+| start_server.bat   | Windows one-click start script      |
+| start_server.sh    | Mac/Linux one-click start script    |
+| 完整示例数据.md     | Sample data and format reference    |
+| 手机访问说明_8080端口.txt | Mobile/LAN access instructions      |
 
 ---
 
-## 📱 手机/多设备访问
+## 🖥️ Requirements
 
-1. 启动本地服务器后，确保手机和电脑在同一WiFi网络。
-2. 用手机浏览器访问电脑的IP地址+端口（如：http://192.168.1.100:8080/番茄工作表.html）。
-3. 详细说明见 `手机访问说明_8080端口.txt`。
+- **Python 3** (for local HTTP server, 3.6+ recommended)
+- Modern browser (Chrome, Edge, Firefox, Safari, etc.)
 
----
-
-## 📝 主要功能
-
-- **番茄时钟计时与统计**
-- **任务管理与同步**（状态、完成度、复选框自动联动）
-- **今日总结与明日计划**
-- **数据自动保存与恢复**
-- **Markdown/JSON导出与导入**
-- **全屏/桌面/声音/震动提醒**
-- **多端自适应UI**
+> No third-party dependencies required. No Node.js or Flask needed.
 
 ---
 
-## 💾 数据管理
+## 📱 Mobile & Multi-Device Access
 
-- **自动保存**：所有输入自动本地保存，24小时有效
-- **手动备份/恢复**：支持JSON文件一键备份与恢复
-- **Markdown导出**：一键复制为MD格式，便于分享
-- **任务同步**：状态、完成度、复选框自动联动
-
----
-
-## 🛠️ 常见问题
-
-- **端口被占用**：如8080端口被占用，可修改脚本中的端口号
-- **Python版本问题**：如遇`No module named http`，请确保使用的是Python 3
-- **无法访问**：请检查防火墙、网络、IP地址等
+1. Start the local server and ensure your phone and computer are on the same WiFi network.
+2. On your phone, open the browser and visit your computer's IP + port (e.g., http://192.168.1.100:8080/pomodoro.html).
+3. See `手机访问说明_8080端口.txt` for details.
 
 ---
 
-## 📊 示例数据
+## 📝 Features
 
-详见 `完整示例数据.md`，包含任务、番茄时段、总结等完整范例。
-
----
-
-## 🏷️ 其他说明
-
-- 本项目为纯前端应用，所有数据仅保存在本地浏览器，不上传云端。
-- 支持多设备同时访问（如手机+电脑），但数据不会自动同步到其他设备。
-- 如需更复杂的后端功能，可自行扩展。
+- **Pomodoro timer and statistics**
+- **Task management & synchronization** (status, completion, checkbox auto-link)
+- **Daily summary & planning**
+- **Auto-save & restore**
+- **Markdown/JSON export & import**
+- **Fullscreen/Desktop/Sound/Vibration notifications**
+- **Responsive UI for all devices**
 
 ---
 
-## ✨ 享受高效专注的每一天！
+## 💾 Data Management
+
+- **Auto-save**: All inputs are saved locally, valid for 24 hours
+- **Manual backup/restore**: One-click JSON file backup and restore
+- **Markdown export**: One-click copy as Markdown for easy sharing
+- **Task sync**: Status, completion, and checkboxes are auto-linked
 
 ---
 
-如需进一步帮助或有建议，欢迎反馈！
+## 🛠️ FAQ
+
+- **Port in use**: If port 8080 is occupied, edit the script to change the port
+- **Python version error**: If you see `No module named http`, make sure you are using Python 3
+- **Cannot access**: Check firewall, network, and IP address
 
 ---
 
-如果你需要英文版或更详细的技术说明，也可以随时告诉我！
+## 📊 Sample Data
+
+See `完整示例数据.md` for a complete example including tasks, Pomodoro sessions, and summaries.
+
+---
+
+## 🏷️ Notes
+
+- This is a pure front-end app; all data is stored locally in your browser and never uploaded.
+- Supports multi-device access (e.g., phone + computer), but data does not sync automatically between devices.
+- For advanced backend features, feel free to extend the project.
+
+---
+
+## ✨ Enjoy a focused and productive day!
+
+---
+
+For further help or suggestions, feel free to open an issue or contribute!
