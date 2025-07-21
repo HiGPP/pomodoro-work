@@ -2679,6 +2679,15 @@ _________________________________________________\n\n`;
                 if (currentValue) {
                     select.value = currentValue;
                 }
+                // 同步select/input显示状态
+                const taskInput = select.parentElement.querySelector('.task-input');
+                if (select.value === 'manual' || (select.value && !select.value.startsWith('任务') && select.value !== '')) {
+                    select.style.display = 'none';
+                    taskInput.style.display = 'block';
+                } else {
+                    select.style.display = '';
+                    taskInput.style.display = 'none';
+                }
             });
         }
         
@@ -2686,11 +2695,10 @@ _________________________________________________\n\n`;
         function handleTaskSelect(selectElement) {
             const taskInput = selectElement.parentElement.querySelector('.task-input');
             const selectedValue = selectElement.value;
-            
             if (selectedValue === 'manual') {
-                // 切换到手动输入模式
                 selectElement.style.display = 'none';
                 taskInput.style.display = 'block';
+                taskInput.value = '';
                 taskInput.focus();
             } else if (selectedValue && !selectedValue.startsWith('任务') && selectedValue !== '') {
                 // 选择了具体任务，填充到输入框
@@ -2698,9 +2706,12 @@ _________________________________________________\n\n`;
                 taskInput.style.display = 'block';
                 selectElement.style.display = 'none';
             } else if (selectedValue && selectedValue.startsWith('任务') && selectedValue !== '') {
-                // 选择了占位符任务，提示用户先输入任务内容
                 showNotification('⚠️ 请先在今日目标任务中输入任务内容', 'warning');
-                selectElement.value = ''; // 重置选择
+                selectElement.value = '';
+            } else {
+                // 选择为空，select显示，input隐藏
+                selectElement.style.display = '';
+                taskInput.style.display = 'none';
             }
         }
         
@@ -2929,13 +2940,9 @@ _________________________________________________\n\n`;
         // 恢复番茄时段表格数据
         function restorePomodoroTableData(tableData) {
             const tableBody = document.getElementById('scheduleTable');
-            
-            // 清空现有表格
             tableBody.innerHTML = '';
-            
             tableData.forEach(rowData => {
                 if (rowData.isBreak) {
-                    // 处理长休息行
                     const breakRow = document.createElement('tr');
                     breakRow.className = 'long-break-row';
                     breakRow.innerHTML = `
@@ -2979,8 +2986,20 @@ _________________________________________________\n\n`;
                             <input type="text" class="notes-input" placeholder="记录干扰或备注...">
                         </td>
                     `;
-                    
                     tableBody.appendChild(row);
+                    // 恢复任务内容
+                    const taskInput = row.querySelector('.task-input');
+                    const taskSelect = row.querySelector('.task-select');
+                    if (taskInput && typeof rowData.taskContent === 'string') taskInput.value = rowData.taskContent;
+                    if (taskSelect && typeof rowData.taskSelectValue === 'string') taskSelect.value = rowData.taskSelectValue;
+                    // 恢复显示状态
+                    if (rowData.taskInputDisplay === 'block') {
+                        taskInput.style.display = 'block';
+                        taskSelect.style.display = 'none';
+                    } else {
+                        taskInput.style.display = 'none';
+                        taskSelect.style.display = '';
+                    }
                 }
             });
         }
