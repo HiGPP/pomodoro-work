@@ -1117,6 +1117,7 @@
         let isBreak = false;
         let isLongBreak = false;
         let deadline = null; // 新增：到期时间戳
+        let pomodoroNotifyTimeout = null; // 新增：系统通知定时器
         
         // 音频相关变量
         let notificationAudio = null;
@@ -1479,6 +1480,14 @@
             if (timer) clearInterval(timer);
             timer = setInterval(updateTimer, 1000);
             updateTimer(); // 立即刷新一次
+            // 系统通知
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            if (Notification.permission === 'granted') {
+                const notifyDelay = deadline - Date.now();
+                schedulePomodoroNotification('番茄钟', '25 分钟到，休息一下吧！', notifyDelay);
+            }
         }
         
         // 开始下一个时段
@@ -1521,6 +1530,14 @@
             if (timer) clearInterval(timer);
             timer = setInterval(updateTimer, 1000);
             updateTimer();
+            // 系统通知
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            if (Notification.permission === 'granted') {
+                const notifyDelay = deadline - Date.now();
+                schedulePomodoroNotification('短休息', '5分钟休息结束，准备开始下一个番茄时段！', notifyDelay);
+            }
         }
         
         // 开始长休息
@@ -1547,6 +1564,14 @@
             if (timer) clearInterval(timer);
             timer = setInterval(updateTimer, 1000);
             updateTimer();
+            // 系统通知
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            if (Notification.permission === 'granted') {
+                const notifyDelay = deadline - Date.now();
+                schedulePomodoroNotification('长休息', '30分钟长休息结束，准备新一轮番茄！', notifyDelay);
+            }
         }
         
         // 暂停时钟
@@ -1561,6 +1586,8 @@
                 timeLeft = Math.ceil(remainingMs / 1000);
                 deadline = null;
             }
+            if (pomodoroNotifyTimeout) clearTimeout(pomodoroNotifyTimeout);
+            pomodoroNotifyTimeout = null;
             document.getElementById('pauseBtn').style.display = 'none';
             document.getElementById('resumeBtn').style.display = 'inline-block';
             updateTimerStatus();
@@ -1592,6 +1619,8 @@
             isBreak = false;
             isLongBreak = false;
             deadline = null;
+            if (pomodoroNotifyTimeout) clearTimeout(pomodoroNotifyTimeout);
+            pomodoroNotifyTimeout = null;
             updateTimerDisplay();
             updateTimerStatus();
             document.getElementById('startBtn').style.display = 'inline-block';
@@ -3042,6 +3071,16 @@ _________________________________________________\n\n`;
                     updateTimer();
                 }
             });
+        }
+        
+        // 调度系统通知
+        function schedulePomodoroNotification(title, body, delay) {
+            if (pomodoroNotifyTimeout) clearTimeout(pomodoroNotifyTimeout);
+            if (Notification.permission === 'granted') {
+                pomodoroNotifyTimeout = setTimeout(() => {
+                    new Notification(title, { body });
+                }, delay);
+            }
         }
     </script>
 </body>
