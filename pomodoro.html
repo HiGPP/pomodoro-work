@@ -937,6 +937,15 @@
         }
         
         .progress-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 在<style>内补充动画样式 */
+        @keyframes tada {
+          0% { transform: scale3d(1, 1, 1); }
+          10%, 20% { transform: scale3d(0.9, 0.9, 0.9) rotate(-3deg); }
+          30%, 50%, 70%, 90% { transform: scale3d(1.1, 1.1, 1.1) rotate(3deg); }
+          40%, 60%, 80% { transform: scale3d(0.95, 0.95, 0.95) rotate(-3deg); }
+          100% { transform: scale3d(1, 1, 1); }
+        }
     </style>
 </head>
 <body>
@@ -1238,9 +1247,15 @@
         }
         
         // 发送桌面通知
+        let lastDesktopNotification = null;
         function sendDesktopNotification(title, message) {
             if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, {
+                // 关闭上一个通知
+                if (lastDesktopNotification) {
+                    try { lastDesktopNotification.close(); } catch (e) {}
+                    lastDesktopNotification = null;
+                }
+                lastDesktopNotification = new Notification(title, {
                     body: message,
                     icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI0IDRDMTIuOTUgNCA0IDEyLjk1IDQgMjRDMCAzNS4wNSAxMi45NSA0NCAyNCA0NEMzNS4wNSA0NCA0OCAzNS4wNSA0OCAyNEM0OCAxMi45NSAzNS4wNSA0IDI0IDRaIiBmaWxsPSIjZjc0YzNjIi8+CjxwYXRoIGQ9Ik0yNCAxMkMyMC42OSAxMiAxOCAxNC42OSAxOCAxOFYyNEMxOCAyNy4zMSAyMC42OSAzMCAyNCAzMEMyNy4zMSAzMCAzMCAyNy4zMSAzMCAyNFYxOEMzMCAxNC42OSAyNy4zMSAxMiAyNCAxMloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=',
                     badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI0IDRDMTIuOTUgNCA0IDEyLjk1IDQgMjRDMCAzNS4wNSAxMi45NSA0NCAyNCA0NEMzNS4wNSA0NCA0OCAzNS4wNSA0OCAyNEM0OCAxMi45NSAzNS4wNSA0IDI0IDRaIiBmaWxsPSIjZjc0YzNjIi8+Cjwvc3ZnPgo=',
@@ -1308,6 +1323,24 @@
             
             // 移除自动关闭逻辑，让用户手动关闭
             // 通知界面不会自动关闭，需要用户点击按钮关闭
+
+            // 新增：尝试前置页面
+            try {
+                if (document.hasFocus && !document.hasFocus()) {
+                    window.focus();
+                }
+                // 闪烁标签栏标题
+                let originalTitle = document.title;
+                let blinkCount = 0;
+                let blinkTimer = setInterval(() => {
+                    document.title = (document.title === '【时间到！】' ? originalTitle : '【时间到！】');
+                    blinkCount++;
+                    if (blinkCount > 8) { // 闪烁4次
+                        clearInterval(blinkTimer);
+                        document.title = originalTitle;
+                    }
+                }, 500);
+            } catch (e) { /* 忽略前置异常 */ }
         }
         
         // 移除全屏通知
@@ -1873,7 +1906,7 @@
                     const breakRow = document.createElement('tr');
                     breakRow.className = 'long-break-row';
                     breakRow.innerHTML = `
-                        <td class="time-column"><strong>长休息 ${formatTime(longBreakStart)}-${formatTime(longBreakEnd)}</strong></td>
+                        <td class="time-column"><strong>${longBreakStart.toTimeString().slice(0, 5)} - ${longBreakEnd.toTimeString().slice(0, 5)}</strong></td>
                         <td colspan="4" style="text-align: center;"><strong>🍃 休息时间 - 散步、喝水、放松</strong></td>
                     `;
                     
@@ -2105,6 +2138,27 @@
                 const completedCount = completedTasks.length;
                 const incompleteCount = incompleteTasks.length;
                 showNotification(`✅ 任务同步完成！已完成：${completedCount}个，未完成：${incompleteCount}个`, 'success');
+
+                // 新增：所有任务完成时反馈
+                if (incompleteCount === 0 && completedCount > 0) {
+                    showFullscreenNotification(
+                        '🎉 恭喜，所有任务已完成！',
+                        `<div style='font-size:1.5em;margin:16px 0;'>你已完成今日全部目标任务！<br>为你的专注与坚持点赞！</div>
+                        <div style='font-size:2.5em;animation: tada 1s;'>🏆</div>
+                        <div style='margin:18px 0 8px 0;'>可以奖励自己一次休息，或者记录下今天的收获吧！</div>`,
+                        'success',
+                        [
+                            { text: '✍️ 记录收获', class: 'primary', onclick: "removeFullscreenNotification();document.getElementById('dailyGains').focus();" },
+                            { text: '🎈 关闭', class: 'secondary', onclick: 'removeFullscreenNotification();' }
+                        ]
+                    );
+                    // 播放音效反馈（如有audio元素）
+                    try {
+                        if (typeof playNotificationAudio === 'function') {
+                            playNotificationAudio();
+                        }
+                    } catch (e) { /* 忽略音频错误 */ }
+                }
                 
                 // 强制触发输入事件以确保界面更新
                 if (completedTasksElement) {
@@ -2890,234 +2944,52 @@ _________________________________________________\n\n`;
                     `;
                     tableBody.appendChild(breakRow);
                 } else {
-                    // 处理普通番茄时段行
                     const row = document.createElement('tr');
-                    
                     row.innerHTML = `
                         <td class="time-column">${rowData.timeRange}</td>
                         <td class="task-input-cell">
                             <select class="task-select" onchange="handleTaskSelect(this)">
                                 <option value="">选择任务或手动输入...</option>
                             </select>
-                            <input type="text" class="task-input" placeholder="具体任务内容..." onchange="updateStats()">
+                            <input type="text" class="task-input" placeholder="具体任务内容..." onchange="updateStats(); syncCompletedAndIncompleteTasks();" oninput="syncCompletedAndIncompleteTasks();" style="display: none;">
                         </td>
                         <td>
                             <select class="completion-select status-select" onchange="handleStatusChange(this)">
                                 <option value="">⭕</option>
-                                <option value="completed" ${rowData.status === 'completed' ? 'selected' : ''}>✅ 已完成</option>
-                                <option value="interrupted" ${rowData.status === 'interrupted' ? 'selected' : ''}>❌ 被中断</option>
+                                <option value="completed">✅ 已完成</option>
+                                <option value="interrupted">❌ 被中断</option>
                             </select>
                         </td>
                         <td>
                             <select class="completion-select percentage-select" onchange="handlePercentageChange(this)">
                                 <option value="">选择完成度</option>
-                                <option value="100" ${rowData.completion === '100' ? 'selected' : ''}>100%</option>
-                                <option value="90" ${rowData.completion === '90' ? 'selected' : ''}>90%</option>
-                                <option value="80" ${rowData.completion === '80' ? 'selected' : ''}>80%</option>
-                                <option value="70" ${rowData.completion === '70' ? 'selected' : ''}>70%</option>
-                                <option value="60" ${rowData.completion === '60' ? 'selected' : ''}>60%</option>
-                                <option value="50" ${rowData.completion === '50' ? 'selected' : ''}>50%</option>
-                                <option value="40" ${rowData.completion === '40' ? 'selected' : ''}>40%</option>
-                                <option value="30" ${rowData.completion === '30' ? 'selected' : ''}>30%</option>
-                                <option value="20" ${rowData.completion === '20' ? 'selected' : ''}>20%</option>
-                                <option value="10" ${rowData.completion === '10' ? 'selected' : ''}>10%</option>
+                                <option value="100">100%</option>
+                                <option value="90">90%</option>
+                                <option value="80">80%</option>
+                                <option value="70">70%</option>
+                                <option value="60">60%</option>
+                                <option value="50">50%</option>
+                                <option value="40">40%</option>
+                                <option value="30">30%</option>
+                                <option value="20">20%</option>
+                                <option value="10">10%</option>
                             </select>
                         </td>
                         <td>
-                            <input type="text" class="notes-input" placeholder="记录干扰或备注..." value="${rowData.notes || ''}">
+                            <input type="text" class="notes-input" placeholder="记录干扰或备注...">
                         </td>
                     `;
-                    
-                    // 设置任务内容
-                    const taskInput = row.querySelector('.task-input');
-                    const taskSelect = row.querySelector('.task-select');
-                    
-                    if (taskInput && rowData.taskContent) {
-                        taskInput.value = rowData.taskContent;
-                    }
-                    
-                    if (taskSelect && rowData.taskSelectValue) {
-                        taskSelect.value = rowData.taskSelectValue;
-                    }
-                    
-                    // 根据保存的显示状态设置显示模式
-                    if (rowData.taskInputDisplay === 'block' || rowData.taskSelectDisplay === 'none') {
-                        // 手动输入模式
-                        if (taskInput) taskInput.style.display = 'block';
-                        if (taskSelect) taskSelect.style.display = 'none';
-                    } else {
-                        // 下拉框模式
-                        if (taskInput) taskInput.style.display = 'none';
-                        if (taskSelect) taskSelect.style.display = 'block';
-                    }
                     
                     tableBody.appendChild(row);
                 }
             });
-            
-            // 更新任务选项
-            updateTaskOptions();
-            
-            // 延迟再次更新，确保所有数据都已恢复
-            setTimeout(() => {
-                updateTaskOptions();
-            }, 500);
         }
-        
-        // 设置自动保存
-        function setupAutoSave() {
-            // 监听所有输入变化
-            const inputs = document.querySelectorAll('input, textarea, select');
-            inputs.forEach(input => {
-                input.addEventListener('change', saveData);
-                input.addEventListener('input', debouncedSaveData); // 使用防抖保存
-            });
-            
-            // 监听任务复选框变化
-            document.addEventListener('change', function(event) {
-                if (event.target.type === 'checkbox' && event.target.id.startsWith('task')) {
-                    saveData();
-                }
-            });
-            
-            // 监听动态添加的元素
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.type === 'childList') {
-                        mutation.addedNodes.forEach(function(node) {
-                            if (node.nodeType === 1) { // 元素节点
-                                const newInputs = node.querySelectorAll ? node.querySelectorAll('input, textarea, select') : [];
-                                newInputs.forEach(input => {
-                                    input.addEventListener('change', saveData);
-                                    input.addEventListener('input', debouncedSaveData);
-                                });
-                                
-                                // 如果是单个输入元素
-                                if (node.tagName && ['INPUT', 'TEXTAREA', 'SELECT'].includes(node.tagName)) {
-                                    node.addEventListener('change', saveData);
-                                    node.addEventListener('input', debouncedSaveData);
-                                }
-                            }
-                        });
-                    }
-                });
-            });
-            
-            // 开始观察
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-            
-            // 页面关闭前保存
-            window.addEventListener('beforeunload', saveData);
-        }
-        
-        // 防抖函数
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-        
-        // 创建防抖保存函数实例
-        const debouncedSaveData = debounce(saveData, 1000);
         
         // 清除保存的数据
         function clearSavedData() {
-            if (confirm('确定要清除所有保存的数据吗？此操作不可恢复。')) {
-                try {
-                    localStorage.removeItem('pomodoroData');
-                    
-                    // 重置页面数据
-                    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('zh-CN', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        weekday: 'long'
-                    });
-                    document.getElementById('startTime').value = '';
-                    document.getElementById('taskCount').value = '5';
-                    document.getElementById('completedTasks').value = '';
-                    document.getElementById('incompleteTasks').value = '';
-                    document.getElementById('dailyGains').value = '';
-                    document.getElementById('improvements').value = '';
-                    document.getElementById('completedCount').textContent = '0';
-                    document.getElementById('totalCount').textContent = '0';
-                    document.getElementById('avgCompletion').textContent = '0%';
-                    
-                    // 重新初始化任务列表
-                    updateTaskCount();
-                    
-                    // 清空番茄时段表格
-                    const tableBody = document.getElementById('scheduleTable');
-                    tableBody.innerHTML = `
-                        <tr>
-                            <td colspan="5" style="text-align: center; color: #666; font-style: italic;">
-                                请先设置开始时间并点击"生成时间表"
-                            </td>
-                        </tr>
-                    `;
-                    
-                    showNotification('✅ 数据已清除！', 'success');
-                    
-                } catch (error) {
-                    console.error('清除数据失败:', error);
-                    showNotification('❌ 清除数据失败', 'danger');
-                }
-            }
-        }
-        
-        // 可见性补帧
-        if (typeof document !== 'undefined') {
-            document.addEventListener('visibilitychange', function() {
-                if (!document.hidden && isRunning && !isPaused) {
-                    updateTimer();
-                }
-            });
-        }
-        
-        // 调度系统通知
-        function schedulePomodoroNotification(title, body, delay) {
-            if (pomodoroNotifyTimeout) clearTimeout(pomodoroNotifyTimeout);
-            if (Notification.permission === 'granted') {
-                console.log('调度系统通知:', title, body, '将在', delay, 'ms后弹出');
-                pomodoroNotifyTimeout = setTimeout(() => {
-                    new Notification(title, { body });
-                    console.log('系统通知已弹出:', title, body);
-                }, delay);
-            } else {
-                console.log('未获得通知权限，无法调度系统通知');
-            }
-        }
-        
-        // 优化按钮样式
-        const style = document.createElement('style');
-        style.innerHTML = `.progress-btn.disabled { opacity: 0.5; cursor: not-allowed; }`;
-        document.head.appendChild(style);
-        
-        // 优化无障碍
-        // 在 HTML 按钮加 aria-label（如在页面模板部分）
-        // <button class="progress-btn" onclick="setProgress(25)" aria-label="跳到25分钟">25分钟</button>
-        
-        // 在 setProgress 里增加动画反馈
-        function updateProgressButtons() {
-            const progressBtns = document.querySelectorAll('.progress-btn');
-            progressBtns.forEach(btn => {
-                if (!isRunning || isPaused) {
-                    btn.disabled = true;
-                    btn.classList.add('disabled');
-                } else {
-                    btn.disabled = false;
-                    btn.classList.remove('disabled');
-                }
-            });
+            localStorage.removeItem('pomodoroData');
+            showNotification('✅ 数据已清除', 'success');
+            loadSavedData(); // 重新加载数据
         }
     </script>
 </body>
