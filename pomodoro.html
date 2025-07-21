@@ -935,6 +935,8 @@
                 text-shadow: 0 0 20px #c0392b;
             }
         }
+        
+        .progress-btn.disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -1155,6 +1157,8 @@
                 syncCompletedAndIncompleteTasks();
                 updateTaskOptions(); // 确保任务选项正确初始化
             }, 1000);
+            
+            updateProgressButtons();
         };
         
         // 初始化音频
@@ -1197,39 +1201,26 @@
         // 设置进度
         function setProgress(percentage) {
             if (!isRunning) return;
-            
             // 确保百分比在有效范围内
             percentage = Math.max(0, Math.min(100, percentage));
-            
             const newTimeLeft = Math.round((100 - percentage) / 100 * totalTime);
             timeLeft = Math.max(0, newTimeLeft);
-            
+            // 关键：同步调整 deadline
+            if (!isPaused) {
+                deadline = Date.now() + timeLeft * 1000;
+            }
             updateTimerDisplay();
-            
+            updateProgressButtons();
+            // 按钮动画反馈
+            const progressBtns = document.querySelectorAll('.progress-btn');
+            progressBtns.forEach(btn => {
+                btn.classList.add('shake');
+                setTimeout(() => btn.classList.remove('shake'), 400);
+            });
             // 如果时间到了，触发结束
-                            if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    playNotificationAudio();
-                    
-                    // 显示全屏通知
-                    showFullscreenNotification(
-                        '🍅 番茄时段结束！',
-                        `第${pomodoroCount}个番茄时段已完成！\n现在是休息时间。`,
-                        'success',
-                        [
-                            {
-                                text: '✅ 确认',
-                                class: 'primary',
-                                onclick: 'removeFullscreenNotification(); stopNotificationAudio(); startNextPeriod();'
-                            },
-                            {
-                                text: '⏭️ 跳过休息',
-                                class: 'secondary',
-                                onclick: 'removeFullscreenNotification(); stopNotificationAudio(); skipBreak();'
-                            }
-                        ]
-                    );
-                }
+            if (timeLeft <= 0) {
+                updateTimer();
+            }
         }
         
         // 从秒数格式化时间
@@ -1395,6 +1386,7 @@
             
             // 开始第一个番茄时段
             startPomodoro();
+            updateProgressButtons();
         }
         
         // 精准更新时间
@@ -1488,6 +1480,7 @@
                 const notifyDelay = deadline - Date.now();
                 schedulePomodoroNotification('番茄钟', '25 分钟到，休息一下吧！', notifyDelay);
             }
+            updateProgressButtons();
         }
         
         // 开始下一个时段
@@ -1538,6 +1531,7 @@
                 const notifyDelay = deadline - Date.now();
                 schedulePomodoroNotification('短休息', '5分钟休息结束，准备开始下一个番茄时段！', notifyDelay);
             }
+            updateProgressButtons();
         }
         
         // 开始长休息
@@ -1572,6 +1566,7 @@
                 const notifyDelay = deadline - Date.now();
                 schedulePomodoroNotification('长休息', '30分钟长休息结束，准备新一轮番茄！', notifyDelay);
             }
+            updateProgressButtons();
         }
         
         // 暂停时钟
@@ -1591,6 +1586,7 @@
             document.getElementById('pauseBtn').style.display = 'none';
             document.getElementById('resumeBtn').style.display = 'inline-block';
             updateTimerStatus();
+            updateProgressButtons();
         }
         
         // 继续时钟
@@ -1605,6 +1601,7 @@
             timer = setInterval(updateTimer, 1000);
             updateTimer();
             updateTimerStatus();
+            updateProgressButtons();
         }
         
         // 停止时钟
@@ -1629,6 +1626,7 @@
             document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('skipBtn').style.display = 'none';
             document.getElementById('currentPomodoro').style.display = 'none';
+            updateProgressButtons();
         }
         
         // 跳过当前时段
@@ -3081,6 +3079,29 @@ _________________________________________________\n\n`;
                     new Notification(title, { body });
                 }, delay);
             }
+        }
+        
+        // 优化按钮样式
+        const style = document.createElement('style');
+        style.innerHTML = `.progress-btn.disabled { opacity: 0.5; cursor: not-allowed; }`;
+        document.head.appendChild(style);
+        
+        // 优化无障碍
+        // 在 HTML 按钮加 aria-label（如在页面模板部分）
+        // <button class="progress-btn" onclick="setProgress(25)" aria-label="跳到25分钟">25分钟</button>
+        
+        // 在 setProgress 里增加动画反馈
+        function updateProgressButtons() {
+            const progressBtns = document.querySelectorAll('.progress-btn');
+            progressBtns.forEach(btn => {
+                if (!isRunning || isPaused) {
+                    btn.disabled = true;
+                    btn.classList.add('disabled');
+                } else {
+                    btn.disabled = false;
+                    btn.classList.remove('disabled');
+                }
+            });
         }
     </script>
 </body>
