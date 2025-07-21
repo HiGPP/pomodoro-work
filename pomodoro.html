@@ -1400,6 +1400,18 @@
                 clearInterval(timer);
                 timer = null;
                 playNotificationAudio();
+                // 兜底补发系统通知
+                if (Notification.permission === 'granted') {
+                    try {
+                        new Notification(
+                            isBreak ? (isLongBreak ? '长休息结束' : '短休息结束') : '番茄钟结束',
+                            { body: isBreak ? (isLongBreak ? '30分钟长休息结束，准备新一轮番茄！' : '5分钟休息结束，准备开始下一个番茄时段！') : '25分钟到，休息一下吧！' }
+                        );
+                        console.log('兜底系统通知已弹出');
+                    } catch (e) {
+                        console.log('兜底系统通知失败', e);
+                    }
+                }
                 if (!isBreak) {
                     showFullscreenNotification(
                         '🍅 番茄时段结束！',
@@ -3075,9 +3087,13 @@ _________________________________________________\n\n`;
         function schedulePomodoroNotification(title, body, delay) {
             if (pomodoroNotifyTimeout) clearTimeout(pomodoroNotifyTimeout);
             if (Notification.permission === 'granted') {
+                console.log('调度系统通知:', title, body, '将在', delay, 'ms后弹出');
                 pomodoroNotifyTimeout = setTimeout(() => {
                     new Notification(title, { body });
+                    console.log('系统通知已弹出:', title, body);
                 }, delay);
+            } else {
+                console.log('未获得通知权限，无法调度系统通知');
             }
         }
         
