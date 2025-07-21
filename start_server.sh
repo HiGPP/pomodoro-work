@@ -11,7 +11,7 @@ elif command -v open >/dev/null 2>&1; then
 fi
 
 if command -v python >/dev/null 2>&1; then
-    python -m http.server 8080
+    python3 -m http.server 8080
 else
     echo "未检测到 Python 3，请先安装 Python 3 并配置环境变量！"
     exit 1

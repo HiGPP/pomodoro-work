@@ -1116,6 +1116,7 @@
         let pomodoroCount = 0;
         let isBreak = false;
         let isLongBreak = false;
+        let deadline = null; // 新增：到期时间戳
         
         // 音频相关变量
         let notificationAudio = null;
@@ -1395,27 +1396,18 @@
             startPomodoro();
         }
         
-        // 开始番茄时段
-        function startPomodoro() {
-            pomodoroCount++;
-            timeLeft = 25 * 60; // 25分钟
-            totalTime = 25 * 60; // 总时间
-            isBreak = false;
-            isLongBreak = false;
-            
+        // 精准更新时间
+        function updateTimer() {
+            if (!deadline) return;
+            let remainingMs = deadline - Date.now();
+            if (remainingMs < 0) remainingMs = 0;
+            timeLeft = Math.ceil(remainingMs / 1000);
             updateTimerDisplay();
-            updateTimerStatus();
-            updateCurrentPomodoro();
-            
-            timer = setInterval(() => {
-                timeLeft--;
-                updateTimerDisplay();
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    playNotificationAudio();
-                    
-                    // 显示全屏通知
+            if (remainingMs <= 0) {
+                clearInterval(timer);
+                timer = null;
+                playNotificationAudio();
+                if (!isBreak) {
                     showFullscreenNotification(
                         '🍅 番茄时段结束！',
                         `第${pomodoroCount}个番茄时段已完成！\n现在是休息时间。`,
@@ -1433,8 +1425,60 @@
                             }
                         ]
                     );
+                } else if (isLongBreak) {
+                    showFullscreenNotification(
+                        '💪 长休息结束！',
+                        '长休息已完成，准备开始新的工作周期。',
+                        'success',
+                        [
+                            {
+                                text: '🍅 开始工作',
+                                class: 'primary',
+                                onclick: 'removeFullscreenNotification(); stopNotificationAudio(); startPomodoro();'
+                            },
+                            {
+                                text: '⏸️ 稍后开始',
+                                class: 'secondary',
+                                onclick: 'removeFullscreenNotification(); stopNotificationAudio();'
+                            }
+                        ]
+                    );
+                } else {
+                    showFullscreenNotification(
+                        '💪 休息结束！',
+                        '短休息已完成，准备开始下一个番茄时段。',
+                        'success',
+                        [
+                            {
+                                text: '🍅 开始工作',
+                                class: 'primary',
+                                onclick: 'removeFullscreenNotification(); stopNotificationAudio(); startPomodoro();'
+                            },
+                            {
+                                text: '⏸️ 稍后开始',
+                                class: 'secondary',
+                                onclick: 'removeFullscreenNotification(); stopNotificationAudio();'
+                            }
+                        ]
+                    );
                 }
-            }, 1000);
+            }
+        }
+        
+        // 开始番茄时段
+        function startPomodoro() {
+            pomodoroCount++;
+            timeLeft = 25 * 60;
+            totalTime = 25 * 60;
+            isBreak = false;
+            isLongBreak = false;
+            deadline = Date.now() + timeLeft * 1000;
+            updateTimerDisplay();
+            updateTimerStatus();
+            updateCurrentPomodoro();
+            if (timer) clearInterval(timer);
+            timer = setInterval(updateTimer, 1000);
+            updateTimer(); // 立即刷新一次
         }
         
         // 开始下一个时段
@@ -1455,13 +1499,13 @@
         
         // 开始短休息
         function startShortBreak() {
-            timeLeft = 5 * 60; // 5分钟
+            timeLeft = 5 * 60;
+            totalTime = 5 * 60;
             isBreak = true;
             isLongBreak = false;
-            
+            deadline = Date.now() + timeLeft * 1000;
             updateTimerDisplay();
             updateTimerStatus();
-            
             showFullscreenNotification(
                 '☕ 开始短休息！',
                 '休息5分钟，放松一下眼睛和身体。\n建议：站起来活动、喝水、远眺。',
@@ -1474,45 +1518,20 @@
                     }
                 ]
             );
-            
-            timer = setInterval(() => {
-                timeLeft--;
-                updateTimerDisplay();
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    playNotificationAudio();
-                    
-                    showFullscreenNotification(
-                        '💪 休息结束！',
-                        '短休息已完成，准备开始下一个番茄时段。',
-                        'success',
-                        [
-                            {
-                                text: '🍅 开始工作',
-                                class: 'primary',
-                                onclick: 'removeFullscreenNotification(); stopNotificationAudio(); startPomodoro();'
-                            },
-                            {
-                                text: '⏸️ 稍后开始',
-                                class: 'secondary',
-                                onclick: 'removeFullscreenNotification(); stopNotificationAudio();'
-                            }
-                        ]
-                    );
-                }
-            }, 1000);
+            if (timer) clearInterval(timer);
+            timer = setInterval(updateTimer, 1000);
+            updateTimer();
         }
         
         // 开始长休息
         function startLongBreak() {
-            timeLeft = 30 * 60; // 30分钟
+            timeLeft = 30 * 60;
+            totalTime = 30 * 60;
             isBreak = true;
             isLongBreak = true;
-            
+            deadline = Date.now() + timeLeft * 1000;
             updateTimerDisplay();
             updateTimerStatus();
-            
             showFullscreenNotification(
                 '🍃 开始长休息！',
                 '恭喜完成4个番茄时段！\n休息30分钟，可以：\n• 散步或轻度运动\n• 喝水补充水分\n• 放松眼睛和大脑\n• 准备下一个工作周期',
@@ -1525,114 +1544,39 @@
                     }
                 ]
             );
-            
-            timer = setInterval(() => {
-                timeLeft--;
-                updateTimerDisplay();
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    playNotificationAudio();
-                    
-                    showFullscreenNotification(
-                        '💪 长休息结束！',
-                        '长休息已完成，准备开始新的工作周期。',
-                        'success',
-                        [
-                            {
-                                text: '🍅 开始工作',
-                                class: 'primary',
-                                onclick: 'removeFullscreenNotification(); stopNotificationAudio(); startPomodoro();'
-                            },
-                            {
-                                text: '⏸️ 稍后开始',
-                                class: 'secondary',
-                                onclick: 'removeFullscreenNotification(); stopNotificationAudio();'
-                            }
-                        ]
-                    );
-                }
-            }, 1000);
+            if (timer) clearInterval(timer);
+            timer = setInterval(updateTimer, 1000);
+            updateTimer();
         }
         
         // 暂停时钟
         function pauseTimer() {
             if (!isRunning || isPaused) return;
-            
             isPaused = true;
             clearInterval(timer);
-            
+            timer = null;
+            // 记录剩余时间
+            if (deadline) {
+                let remainingMs = deadline - Date.now();
+                timeLeft = Math.ceil(remainingMs / 1000);
+                deadline = null;
+            }
             document.getElementById('pauseBtn').style.display = 'none';
             document.getElementById('resumeBtn').style.display = 'inline-block';
-            
             updateTimerStatus();
         }
         
         // 继续时钟
         function resumeTimer() {
             if (!isRunning || !isPaused) return;
-            
             isPaused = false;
-            
+            // 用剩余时间重新计算 deadline
+            deadline = Date.now() + timeLeft * 1000;
             document.getElementById('resumeBtn').style.display = 'none';
             document.getElementById('pauseBtn').style.display = 'inline-block';
-            
-            timer = setInterval(() => {
-                timeLeft--;
-                updateTimerDisplay();
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    playNotificationAudio();
-                    
-                    if (isBreak) {
-                        if (isLongBreak) {
-                            showFullscreenNotification(
-                                '💪 长休息结束！',
-                                '长休息已完成，准备开始下一个番茄时段。',
-                                'success',
-                                [
-                                    {
-                                        text: '🍅 开始工作',
-                                        class: 'primary',
-                                        onclick: 'removeFullscreenNotification(); stopNotificationAudio(); startPomodoro();'
-                                    },
-                                    {
-                                        text: '⏸️ 稍后开始',
-                                        class: 'secondary',
-                                        onclick: 'removeFullscreenNotification(); stopNotificationAudio();'
-                                    }
-                                ]
-                            );
-                        } else {
-                            showFullscreenNotification(
-                                '💪 休息结束！',
-                                '短休息已完成，准备开始下一个番茄时段。',
-                                'success',
-                                [
-                                    {
-                                        text: '🍅 开始工作',
-                                        class: 'primary',
-                                        onclick: 'removeFullscreenNotification(); stopNotificationAudio(); startPomodoro();'
-                                    },
-                                    {
-                                        text: '⏸️ 稍后开始',
-                                        class: 'secondary',
-                                        onclick: 'removeFullscreenNotification(); stopNotificationAudio();'
-                                    }
-                                ]
-                            );
-                        }
-                    } else {
-                        if (pomodoroCount % 4 === 0) {
-                            startLongBreak();
-                        } else {
-                            startShortBreak();
-                        }
-                    }
-                }
-            }, 1000);
-            
+            if (timer) clearInterval(timer);
+            timer = setInterval(updateTimer, 1000);
+            updateTimer();
             updateTimerStatus();
         }
         
@@ -1641,33 +1585,28 @@
             isRunning = false;
             isPaused = false;
             clearInterval(timer);
-            
+            timer = null;
             timeLeft = 25 * 60;
             totalTime = 25 * 60;
             pomodoroCount = 0;
             isBreak = false;
             isLongBreak = false;
-            
+            deadline = null;
             updateTimerDisplay();
             updateTimerStatus();
-            
-            // 重置按钮状态
             document.getElementById('startBtn').style.display = 'inline-block';
             document.getElementById('pauseBtn').style.display = 'none';
             document.getElementById('resumeBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('skipBtn').style.display = 'none';
-            
-            // 隐藏当前番茄信息
             document.getElementById('currentPomodoro').style.display = 'none';
         }
         
         // 跳过当前时段
         function skipTimer() {
             if (!isRunning) return;
-            
             clearInterval(timer);
-            
+            timer = null;
             if (isBreak) {
                 if (isLongBreak) {
                     showFullscreenNotification(
@@ -3094,6 +3033,15 @@ _________________________________________________\n\n`;
                     showNotification('❌ 清除数据失败', 'danger');
                 }
             }
+        }
+        
+        // 可见性补帧
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden && isRunning && !isPaused) {
+                    updateTimer();
+                }
+            });
         }
     </script>
 </body>
