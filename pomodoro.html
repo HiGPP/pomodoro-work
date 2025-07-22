@@ -992,7 +992,7 @@
                 <h4>🎯 工作准备</h4>
                 <div class="time-controls">
             <label for="startTime">开始时间：</label>
-            <input type="time" id="startTime">
+            <input type="time" id="startTime" oninput="handleAnyInput()" onchange="handleAnyInput()" onpaste="handleAnyInput()">
                     <button onclick="generateSchedule()" class="btn-primary">生成时间表</button>
                     <button onclick="useCurrentTime()" class="btn-secondary">使用当前时间</button>
                 </div>
@@ -1038,7 +1038,7 @@
             <div class="task-controls">
                 <div class="task-counter">
                     <label for="taskCount">任务数量：</label>
-                    <input type="number" id="taskCount" value="5" min="1" max="20">
+                    <input type="number" id="taskCount" value="5" min="1" max="20" oninput="handleAnyInput()" onchange="handleAnyInput()" onpaste="handleAnyInput()">
                         <button onclick="updateTaskCount()" class="btn-update">更新任务</button>
                 </div>
             </div>
@@ -1091,11 +1091,11 @@
             <div class="summary-grid">
                 <div class="summary-item">
                     <h4>✅ 已完成任务</h4>
-                    <textarea class="textarea-full" id="completedTasks" placeholder="自动同步已完成的任务列表...&#10;格式：1.  ✅  任务名称&#10;2.  ✅  任务名称"></textarea>
+                    <textarea class="textarea-full" id="completedTasks" placeholder="自动同步已完成的任务列表...&#10;格式：1.  ✅  任务名称&#10;2.  ✅  任务名称" oninput="handleAnyInput()" onchange="handleAnyInput()" onpaste="handleAnyInput()"></textarea>
                 </div>
                 <div class="summary-item">
                     <h4>❌ 未完成任务</h4>
-                    <textarea class="textarea-full" id="incompleteTasks" placeholder="自动同步未完成的任务列表...&#10;格式：1.  ❌  任务名称&#10;2.  ❌  任务名称"></textarea>
+                    <textarea class="textarea-full" id="incompleteTasks" placeholder="自动同步未完成的任务列表...&#10;格式：1.  ❌  任务名称&#10;2.  ❌  任务名称" oninput="handleAnyInput()" onchange="handleAnyInput()" onpaste="handleAnyInput()"></textarea>
                 </div>
             </div>
             
@@ -1137,6 +1137,7 @@
         // 页面加载时初始化
         window.onload = function() {
             displayCurrentDate();
+            setInterval(displayCurrentDate, 60 * 1000); // 每分钟自动刷新日期
             useCurrentTime();
             loadSavedData(); // 加载保存的数据
             updateTaskCount(); // 初始化任务列表
@@ -1798,7 +1799,7 @@
                 taskDiv.className = 'task-input';
                 taskDiv.innerHTML = `
                     <input type="checkbox" id="task${i}">
-                    <input type="text" placeholder="任务${i}：例如 完成季度报告的数据分析部分" id="taskText${i}" onchange="updateTaskOptions()">
+                    <input type="text" placeholder="任务${i}：例如 完成季度报告的数据分析部分" id="taskText${i}" onchange="updateTaskOptions()" oninput="handleTaskInput(this)" onpaste="handleTaskInput(this)">
                 `;
                 container.appendChild(taskDiv);
                 
@@ -1889,7 +1890,7 @@
                         </select>
                     </td>
                     <td>
-                        <input type="text" class="notes-input" placeholder="记录干扰或备注...">
+                        <input type="text" class="notes-input" placeholder="记录干扰或备注..." oninput="handleAnyInput()" onchange="handleAnyInput()" onpaste="handleAnyInput()">
                     </td>
                 `;
                 
@@ -2872,7 +2873,7 @@ _________________________________________________\n\n`;
                     taskDiv.className = 'task-input';
                     taskDiv.innerHTML = `
                         <input type="checkbox" id="task${i}">
-                        <input type="text" placeholder="任务${i}：例如 完成季度报告的数据分析部分" id="taskText${i}" onchange="updateTaskOptions()">
+                        <input type="text" placeholder="任务${i}：例如 完成季度报告的数据分析部分" id="taskText${i}" onchange="updateTaskOptions()" oninput="handleTaskInput(this)" onpaste="handleTaskInput(this)">
                     `;
                     container.appendChild(taskDiv);
                 }
@@ -2983,7 +2984,7 @@ _________________________________________________\n\n`;
                             </select>
                         </td>
                         <td>
-                            <input type="text" class="notes-input" placeholder="记录干扰或备注...">
+                            <input type="text" class="notes-input" placeholder="记录干扰或备注..." oninput="handleAnyInput()" onchange="handleAnyInput()" onpaste="handleAnyInput()">
                         </td>
                     `;
                     tableBody.appendChild(row);
@@ -3009,6 +3010,12 @@ _________________________________________________\n\n`;
             localStorage.removeItem('pomodoroData');
             showNotification('✅ 数据已清除', 'success');
             loadSavedData(); // 重新加载数据
+        }
+        
+        // 新增：任务输入实时保存
+        function handleTaskInput(input) {
+            updateTaskOptions();
+            saveData();
         }
     </script>
 </body>
