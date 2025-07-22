@@ -946,6 +946,37 @@
           40%, 60%, 80% { transform: scale3d(0.95, 0.95, 0.95) rotate(-3deg); }
           100% { transform: scale3d(1, 1, 1); }
         }
+        
+        /* 响应式增强：平板和手机端优化 */
+        @media (max-width: 1024px) {
+          .container { padding: 10px; }
+          h1 { font-size: 2em; }
+        }
+        @media (max-width: 768px) {
+          .container { padding: 4px; }
+          h1 { font-size: 1.5em; }
+          .summary-grid { grid-template-columns: 1fr !important; gap: 10px; }
+          .pomodoro-table { display: block; width: 100%; overflow-x: auto; min-width: 600px; }
+          .btn-group, .time-controls { flex-direction: column; gap: 6px; }
+          .timer-btn, .btn-primary, .btn-secondary, .btn-export, .btn-backup, .btn-restore, .btn-sync, .btn-clear, .btn-update {
+            font-size: 1em; padding: 12px 0;
+          }
+          .task-input input[type="text"] { font-size: 1em; }
+          .textarea-full { min-height: 80px; font-size: 13px; }
+        }
+        @media (max-width: 480px) {
+          .container { padding: 2px; }
+          h1 { font-size: 1.1em; }
+          .summary-section { padding: 8px; }
+          .summary-item { padding: 8px; }
+          .pomodoro-table { min-width: 480px; }
+          .timer-display { font-size: 2em; }
+          .timer-btn, .btn-primary, .btn-secondary, .btn-export, .btn-backup, .btn-restore, .btn-sync, .btn-clear, .btn-update {
+            font-size: 0.95em; padding: 10px 0;
+          }
+          .task-input input[type="text"] { font-size: 0.95em; }
+          .textarea-full { min-height: 60px; font-size: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -1013,8 +1044,6 @@
                 <h4>🔄 任务同步</h4>
                 <div class="btn-group">
                     <button onclick="syncCompletedAndIncompleteTasks()" class="btn-sync">🔄 同步任务</button>
-                    <button onclick="testSync()" class="btn-sync">🧪 测试同步</button>
-                    <button onclick="testTaskSelection()" class="btn-sync">🔍 测试选择</button>
                     <button onclick="clearSavedData()" class="btn-clear">🗑️ 清除数据</button>
                 </div>
                 <div style="font-size: 11px; color: #666; margin-top: 5px;">
@@ -2990,7 +3019,9 @@ _________________________________________________\n\n`;
         function clearSavedData() {
             localStorage.removeItem('pomodoroData');
             showNotification('✅ 数据已清除', 'success');
-            loadSavedData(); // 重新加载数据
+            setTimeout(() => {
+                location.reload(); // 强制刷新页面，彻底重置所有状态
+            }, 500);
         }
         
         // 新增：任务输入实时保存
