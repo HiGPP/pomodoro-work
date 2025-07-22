@@ -2764,21 +2764,22 @@ _________________________________________________\n\n`;
                 const savedData = localStorage.getItem('pomodoroData');
                 if (savedData) {
                     const data = JSON.parse(savedData);
-                    
                     // 检查数据是否过期（超过24小时）
                     const savedAt = new Date(data.savedAt);
                     const now = new Date();
                     const hoursDiff = (now - savedAt) / (1000 * 60 * 60);
-                    
                     if (hoursDiff > 24) {
                         console.log('数据已过期，清除旧数据');
                         localStorage.removeItem('pomodoroData');
                         return;
                     }
-                    
                     // 恢复基本信息
-                    if (data.currentDate) {
+                    // 新增：如果日期和当前日期不一致，使用当前日期
+                    const todayStr = now.toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
+                    if (data.currentDate && data.currentDate === todayStr) {
                         document.getElementById('currentDate').textContent = data.currentDate;
+                    } else {
+                        document.getElementById('currentDate').textContent = todayStr;
                     }
                     if (data.startTime) {
                         document.getElementById('startTime').value = data.startTime;
