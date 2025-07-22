@@ -2179,12 +2179,7 @@
                             { text: '🎈 关闭', class: 'secondary', onclick: 'removeFullscreenNotification();' }
                         ]
                     );
-                    // 播放音效反馈（如有audio元素）
-                    try {
-                        if (typeof playNotificationAudio === 'function') {
-                            playNotificationAudio();
-                        }
-                    } catch (e) { /* 忽略音频错误 */ }
+                    // 不再播放音效
                 }
                 
                 // 强制触发输入事件以确保界面更新
