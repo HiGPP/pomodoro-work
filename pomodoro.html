@@ -1139,35 +1139,31 @@
             displayCurrentDate();
             setInterval(displayCurrentDate, 60 * 1000); // 每分钟自动刷新日期
             useCurrentTime();
-            loadSavedData(); // 加载保存的数据
-            updateTaskCount(); // 初始化任务列表
+            if (localStorage.getItem('pomodoroData')) {
+                loadSavedData();
+            } else {
+                updateTaskCount(); // 只在无数据时初始化
+            }
             requestNotificationPermission(); // 请求通知权限
-            
             // 初始化音频
             initializeAudio();
-            
             // 添加键盘事件监听
             document.addEventListener('keydown', function(event) {
-                // 按空格键停止声音
                 if (event.code === 'Space') {
                     event.preventDefault();
                     stopNotificationAudio();
                 }
-                // 按ESC键停止声音
                 if (event.code === 'Escape') {
                     stopNotificationAudio();
                 }
             });
-            
             // 添加自动保存功能
             setupAutoSave();
-            
             // 延迟同步任务状态
             setTimeout(() => {
                 syncCompletedAndIncompleteTasks();
                 updateTaskOptions(); // 确保任务选项正确初始化
             }, 1000);
-            
             updateProgressButtons();
         };
         
@@ -2139,7 +2135,9 @@
                 const completedCount = completedTasks.length;
                 const incompleteCount = incompleteTasks.length;
                 showNotification(`✅ 任务同步完成！已完成：${completedCount}个，未完成：${incompleteCount}个`, 'success');
-
+                // 新增：同步后自动保存
+                saveData();
+                
                 // 新增：所有任务完成时反馈
                 if (incompleteCount === 0 && completedCount > 0) {
                     showFullscreenNotification(
@@ -2714,44 +2712,37 @@ _________________________________________________\n\n`;
                 selectElement.style.display = '';
                 taskInput.style.display = 'none';
             }
+            // 新增：每次选择后自动保存
+            saveData();
         }
         
         // 保存数据到本地存储
         function saveData() {
+            if (window.isRestoring) return;
             try {
                 const data = {
                     // 基本信息
                     currentDate: document.getElementById('currentDate').textContent,
                     startTime: document.getElementById('startTime').value,
                     taskCount: document.getElementById('taskCount').value,
-                    
                     // 任务数据
                     tasks: getAllTaskData(),
-                    
                     // 番茄时段数据
                     pomodoroTable: getPomodoroTableData(),
-                    
                     // 总结数据
                     completedTasks: document.getElementById('completedTasks').value,
                     incompleteTasks: document.getElementById('incompleteTasks').value,
                     dailyGains: document.getElementById('dailyGains').value,
                     improvements: document.getElementById('improvements').value,
-                    
                     // 统计信息
                     completedCount: document.getElementById('completedCount').textContent,
                     totalCount: document.getElementById('totalCount').textContent,
                     avgCompletion: document.getElementById('avgCompletion').textContent,
-                    
                     // 保存时间
                     savedAt: new Date().toISOString()
                 };
-                
                 localStorage.setItem('pomodoroData', JSON.stringify(data));
                 console.log('数据已保存到本地存储');
-                
-                // 显示保存成功提示（可选）
-                // showNotification('✅ 数据已自动保存', 'success');
-                
             } catch (error) {
                 console.error('保存数据失败:', error);
                 showNotification('❌ 数据保存失败', 'danger');
@@ -2760,6 +2751,8 @@ _________________________________________________\n\n`;
         
         // 从本地存储加载数据
         function loadSavedData() {
+            window.isRestoring = true;
+            showLoadingMask();
             try {
                 const savedData = localStorage.getItem('pomodoroData');
                 if (savedData) {
@@ -2773,71 +2766,44 @@ _________________________________________________\n\n`;
                         localStorage.removeItem('pomodoroData');
                         return;
                     }
-                    // 恢复基本信息
-                    // 新增：如果日期和当前日期不一致，使用当前日期
-                    const todayStr = now.toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
-                    if (data.currentDate && data.currentDate === todayStr) {
-                        document.getElementById('currentDate').textContent = data.currentDate;
-                    } else {
-                        document.getElementById('currentDate').textContent = todayStr;
-                    }
-                    if (data.startTime) {
-                        document.getElementById('startTime').value = data.startTime;
-                    }
-                    if (data.taskCount) {
-                        document.getElementById('taskCount').value = data.taskCount;
-                    }
-                    
-                    // 恢复任务数据
+                    let hasAsyncRestore = false;
                     if (data.tasks && data.tasks.length > 0) {
-                        // 延迟恢复任务数据，确保DOM已准备好
+                        hasAsyncRestore = true;
                         setTimeout(() => {
                             restoreTaskData(data.tasks);
                         }, 100);
                     }
-                    
-                    // 恢复番茄时段数据
                     if (data.pomodoroTable && data.pomodoroTable.length > 0) {
-                        // 延迟恢复番茄时段数据，确保DOM已准备好
+                        hasAsyncRestore = true;
                         setTimeout(() => {
                             restorePomodoroTableData(data.pomodoroTable);
+                            setTimeout(() => {
+                                try {
+                                    syncCompletedAndIncompleteTasks();
+                                } finally {
+                                    window.isRestoring = false;
+                                    hideLoadingMask();
+                                    saveData();
+                                }
+                            }, 200);
                         }, 200);
                     }
-                    
-                    // 恢复总结数据
-                    if (data.completedTasks) {
-                        document.getElementById('completedTasks').value = data.completedTasks;
+                    if (!hasAsyncRestore) {
+                        try {
+                            syncCompletedAndIncompleteTasks();
+                        } finally {
+                            window.isRestoring = false;
+                            hideLoadingMask();
+                            saveData();
+                        }
                     }
-                    if (data.incompleteTasks) {
-                        document.getElementById('incompleteTasks').value = data.incompleteTasks;
-                    }
-                    if (data.dailyGains) {
-                        document.getElementById('dailyGains').value = data.dailyGains;
-                    }
-                    if (data.improvements) {
-                        document.getElementById('improvements').value = data.improvements;
-                    }
-                    
-                    // 恢复统计信息
-                    if (data.completedCount) {
-                        document.getElementById('completedCount').textContent = data.completedCount;
-                    }
-                    if (data.totalCount) {
-                        document.getElementById('totalCount').textContent = data.totalCount;
-                    }
-                    if (data.avgCompletion) {
-                        document.getElementById('avgCompletion').textContent = data.avgCompletion;
-                    }
-                    
-                    console.log('数据已从本地存储恢复');
-                    showNotification('✅ 数据已自动恢复', 'success');
-                    // 新增：恢复后自动同步任务状态
-                    syncCompletedAndIncompleteTasks();
-                    
                 }
             } catch (error) {
                 console.error('加载数据失败:', error);
                 showNotification('❌ 数据加载失败', 'danger');
+            } finally {
+                window.isRestoring = false;
+                hideLoadingMask();
             }
         }
         
@@ -3004,6 +2970,13 @@ _________________________________________________\n\n`;
                         taskInput.style.display = 'none';
                         taskSelect.style.display = '';
                     }
+                    // 新增：恢复状态、完成度、备注
+                    const statusSelect = row.querySelector('.status-select');
+                    if (statusSelect && typeof rowData.status === 'string') statusSelect.value = rowData.status;
+                    const completionSelect = row.querySelector('.percentage-select');
+                    if (completionSelect && typeof rowData.completion === 'string') completionSelect.value = rowData.completion;
+                    const notesInput = row.querySelector('.notes-input');
+                    if (notesInput && typeof rowData.notes === 'string') notesInput.value = rowData.notes;
                 }
             });
         }
@@ -3019,6 +2992,33 @@ _________________________________________________\n\n`;
         function handleTaskInput(input) {
             updateTaskOptions();
             saveData();
+        }
+        
+        // 新增：恢复期间加 loading 遮罩
+        function showLoadingMask() {
+            let mask = document.getElementById('loadingMask');
+            if (!mask) {
+                mask = document.createElement('div');
+                mask.id = 'loadingMask';
+                mask.style.position = 'fixed';
+                mask.style.top = 0;
+                mask.style.left = 0;
+                mask.style.width = '100vw';
+                mask.style.height = '100vh';
+                mask.style.background = 'rgba(255,255,255,0.7)';
+                mask.style.zIndex = 99999;
+                mask.style.display = 'flex';
+                mask.style.alignItems = 'center';
+                mask.style.justifyContent = 'center';
+                mask.innerHTML = '<div style="font-size:2em;color:#3498db;">正在恢复数据，请稍候...</div>';
+                document.body.appendChild(mask);
+            } else {
+                mask.style.display = 'flex';
+            }
+        }
+        function hideLoadingMask() {
+            const mask = document.getElementById('loadingMask');
+            if (mask) mask.style.display = 'none';
         }
     </script>
 </body>
