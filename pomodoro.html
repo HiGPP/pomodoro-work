@@ -2831,6 +2831,8 @@ _________________________________________________\n\n`;
                     
                     console.log('数据已从本地存储恢复');
                     showNotification('✅ 数据已自动恢复', 'success');
+                    // 新增：恢复后自动同步任务状态
+                    syncCompletedAndIncompleteTasks();
                     
                 }
             } catch (error) {
