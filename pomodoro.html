@@ -1975,35 +1975,37 @@
         
         // 更新统计信息
         function updateStats() {
-            const statusSelects = document.querySelectorAll('select.status-select');
-            const percentageSelects = document.querySelectorAll('select.percentage-select');
+            const tableRows = document.querySelectorAll('#scheduleTable tr');
             let completedCount = 0;
             let totalCompletions = 0;
             let completionSum = 0;
-            
-            // 统计完成状态
-            statusSelects.forEach((statusSelect, index) => {
-                const percentageSelect = percentageSelects[index];
-                
-                if (statusSelect && statusSelect.value === 'completed') {
-                    completedCount++;
-                }
-                
-                if (percentageSelect && percentageSelect.value) {
-                    totalCompletions++;
-                    completionSum += parseInt(percentageSelect.value);
+            let totalCount = 0; // 总番茄数
+            tableRows.forEach(row => {
+                if (!row.classList.contains('long-break-row')) {
+                    totalCount++;
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 5) {
+                        const taskInput = cells[1].querySelector('.task-input');
+                        const statusSelect = cells[2].querySelector('select.status-select');
+                        const completionSelect = cells[3].querySelector('select.percentage-select');
+                        const hasTask = taskInput && taskInput.value.trim();
+                        if (hasTask && statusSelect && statusSelect.value !== 'interrupted') {
+                            completedCount++;
+                        }
+                        if (completionSelect && completionSelect.value) {
+                            totalCompletions++;
+                            completionSum += parseInt(completionSelect.value);
+                        }
+                    }
                 }
             });
-            
             document.getElementById('completedCount').textContent = completedCount;
-            
+            document.getElementById('totalCount').textContent = totalCount;
             // 计算平均完成度
             const avgCompletion = totalCompletions > 0 ? Math.round(completionSum / totalCompletions) : 0;
             document.getElementById('avgCompletion').textContent = avgCompletion + '%';
-            
             // 自动同步已完成和未完成任务
             syncCompletedAndIncompleteTasks();
-            
             // 保存数据
             saveData();
         }
@@ -2639,45 +2641,40 @@ _________________________________________________\n\n`;
             const taskCount = parseInt(document.getElementById('taskCount').value);
             
             taskSelects.forEach(select => {
-                // 保存当前选中的值
-                const currentValue = select.value;
-                
+                // 优先恢复 data-restore-value
+                const currentValue = select.getAttribute('data-restore-value') || select.value;
                 // 清空现有选项（保留第一个默认选项）
                 select.innerHTML = '<option value="">选择任务或手动输入...</option>';
-                
                 // 添加任务选项
                 for (let i = 1; i <= taskCount; i++) {
                     const taskTextElement = document.getElementById(`taskText${i}`);
                     if (taskTextElement) {
                         const taskText = taskTextElement.value.trim();
                         const option = document.createElement('option');
-                        
                         if (taskText) {
-                            // 如果有任务内容，显示任务内容
                             option.value = taskText;
                             option.textContent = `任务${i}：${taskText}`;
                         } else {
-                            // 如果没有任务内容，显示占位符
                             option.value = `任务${i}`;
                             option.textContent = `任务${i}：请输入任务内容`;
                             option.disabled = true;
                             option.style.color = '#999';
                         }
-                        
                         select.appendChild(option);
                     }
                 }
-                
                 // 添加手动输入选项
                 const manualOption = document.createElement('option');
                 manualOption.value = 'manual';
                 manualOption.textContent = '✏️ 手动输入...';
                 select.appendChild(manualOption);
-                
+
                 // 恢复之前选中的值
                 if (currentValue) {
                     select.value = currentValue;
                 }
+                // 清除 data-restore-value，避免后续干扰
+                select.removeAttribute('data-restore-value');
                 // 同步select/input显示状态
                 const taskInput = select.parentElement.querySelector('.task-input');
                 if (select.value === 'manual' || (select.value && !select.value.startsWith('任务') && select.value !== '')) {
@@ -2780,6 +2777,7 @@ _________________________________________________\n\n`;
                             setTimeout(() => {
                                 try {
                                     syncCompletedAndIncompleteTasks();
+                                    updateStats(); // 恢复后刷新统计
                                 } finally {
                                     window.isRestoring = false;
                                     hideLoadingMask();
@@ -2791,6 +2789,7 @@ _________________________________________________\n\n`;
                     if (!hasAsyncRestore) {
                         try {
                             syncCompletedAndIncompleteTasks();
+                            updateStats(); // 恢复后刷新统计
                         } finally {
                             window.isRestoring = false;
                             hideLoadingMask();
@@ -2858,6 +2857,8 @@ _________________________________________________\n\n`;
                     textInput.value = task.text;
                 }
             });
+            // 新增：恢复后刷新统计
+            updateStats();
         }
         
         // 获取番茄时段表格数据
@@ -2961,7 +2962,7 @@ _________________________________________________\n\n`;
                     const taskInput = row.querySelector('.task-input');
                     const taskSelect = row.querySelector('.task-select');
                     if (taskInput && typeof rowData.taskContent === 'string') taskInput.value = rowData.taskContent;
-                    if (taskSelect && typeof rowData.taskSelectValue === 'string') taskSelect.value = rowData.taskSelectValue;
+                    if (taskSelect && typeof rowData.taskSelectValue === 'string') taskSelect.setAttribute('data-restore-value', rowData.taskSelectValue);
                     // 恢复显示状态
                     if (rowData.taskInputDisplay === 'block') {
                         taskInput.style.display = 'block';
@@ -2979,6 +2980,10 @@ _________________________________________________\n\n`;
                     if (notesInput && typeof rowData.notes === 'string') notesInput.value = rowData.notes;
                 }
             });
+            // 新增：恢复后同步计划表下拉框选项
+            updateTaskOptions();
+            // 新增：恢复后刷新统计
+            updateStats();
         }
         
         // 清除保存的数据
