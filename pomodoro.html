@@ -1024,6 +1024,7 @@
                 <div class="time-controls">
             <label for="startTime">开始时间：</label>
             <input type="time" id="startTime" oninput="handleAnyInput()" onchange="handleAnyInput()" onpaste="handleAnyInput()">
+            <input type="time" id="endTime" style="margin-left:10px;" placeholder="结束时间">
                     <button onclick="generateSchedule()" class="btn-primary">生成时间表</button>
                     <button onclick="useCurrentTime()" class="btn-secondary">使用当前时间</button>
                 </div>
@@ -1862,30 +1863,37 @@
         // 生成时间表
         function generateSchedule() {
             const startTimeInput = document.getElementById('startTime').value;
-            if (!startTimeInput) {
-                alert('请先选择开始时间！');
+            const endTimeInput = document.getElementById('endTime').value;
+            if (!startTimeInput || !endTimeInput) {
+                alert('请先选择开始时间和结束时间！');
                 return;
             }
-            
-            const [hours, minutes] = startTimeInput.split(':').map(Number);
+            const [startHours, startMinutes] = startTimeInput.split(':').map(Number);
+            const [endHours, endMinutes] = endTimeInput.split(':').map(Number);
             let currentTime = new Date();
-            currentTime.setHours(hours, minutes, 0, 0);
-            
+            currentTime.setHours(startHours, startMinutes, 0, 0);
+            const endTime = new Date();
+            endTime.setHours(endHours, endMinutes, 0, 0);
+            if (endTime <= currentTime) {
+                alert('结束时间必须晚于开始时间！');
+                return;
+            }
             const tableBody = document.getElementById('scheduleTable');
             tableBody.innerHTML = '';
-            
             let pomodoroCount = 0;
-            
-            // 生成12个番茄时段
-            for (let i = 0; i < 12; i++) {
+            let longBreakCount = 0;
+            let nextTime = new Date(currentTime.getTime());
+            // 生成番茄时段，直到下一个番茄结束时间超过结束时间
+            while (true) {
+                // 计算本番茄结束时间
+                let workEnd = new Date(nextTime.getTime() + 25 * 60000);
+                if (workEnd > endTime) break;
+                let restEnd = new Date(workEnd.getTime() + 5 * 60000);
+                // 生成番茄行
                 pomodoroCount++;
-                
-                // 计算结束时间
-                const endTime = new Date(currentTime.getTime() + 25 * 60000);
-                
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td class="time-column">${formatTime(currentTime)}-${formatTime(endTime)}</td>
+                    <td class="time-column">${formatTime(nextTime)}-${formatTime(workEnd)}</td>
                     <td class="task-input-cell">
                         <select class="task-select" onchange="handleTaskSelect(this)">
                             <option value="">选择任务或手动输入...</option>
@@ -1918,42 +1926,31 @@
                         <input type="text" class="notes-input" placeholder="记录干扰或备注..." oninput="handleAnyInput()" onchange="handleAnyInput()" onpaste="handleAnyInput()">
                     </td>
                 `;
-                
                 tableBody.appendChild(row);
-                
-                // 更新到下一个番茄时段开始时间（+30分钟：25分钟工作+5分钟休息）
-                currentTime = new Date(currentTime.getTime() + 30 * 60000);
-                
-                // 每4个番茄后加入长休息
-                if (pomodoroCount % 4 === 0 && i < 11) {
-                    const longBreakStart = new Date(currentTime.getTime() - 5 * 60000); // 减去之前加的5分钟休息
-                    const longBreakEnd = new Date(longBreakStart.getTime() + 30 * 60000); // 30分钟长休息
-                    
+                // 休息时间
+                nextTime = new Date(workEnd.getTime() + 5 * 60000);
+                // 每4个番茄后插入长休息
+                if (pomodoroCount % 4 === 0) {
+                    let longBreakStart = new Date(workEnd.getTime() + 5 * 60000 - 5 * 60000); // 上一个休息结束
+                    let longBreakEnd = new Date(longBreakStart.getTime() + 30 * 60000);
+                    if (longBreakEnd > endTime) break;
                     const breakRow = document.createElement('tr');
                     breakRow.className = 'long-break-row';
                     breakRow.innerHTML = `
-                        <td class="time-column"><strong>长休息 ${longBreakStart.toTimeString().slice(0, 5)} - ${longBreakEnd.toTimeString().slice(0, 5)}</strong></td>
+                        <td class="time-column"><strong>长休息 ${formatTime(longBreakStart)} - ${formatTime(longBreakEnd)}</strong></td>
                         <td colspan="4" style="text-align: center;"><strong>🍃 休息时间 - 散步、喝水、放松</strong></td>
                     `;
-                    
                     tableBody.appendChild(breakRow);
-                    
-                    // 更新下一个番茄时段的开始时间
-                    currentTime = new Date(longBreakEnd.getTime());
+                    nextTime = new Date(longBreakEnd.getTime());
+                    longBreakCount++;
                 }
             }
-            
-            // 更新总计数
-            document.getElementById('totalCount').textContent = '12';
-            updateTaskOptions(); // 更新任务选项
+            document.getElementById('totalCount').textContent = pomodoroCount;
+            updateTaskOptions();
             updateStats();
-            
-            // 延迟同步任务状态
             setTimeout(() => {
                 syncCompletedAndIncompleteTasks();
             }, 200);
-            
-            // 保存数据
             saveData();
         }
         
