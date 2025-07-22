@@ -1294,7 +1294,7 @@
         }
         
         // 显示全屏通知
-        function showFullscreenNotification(title, message, type = 'success', actions = []) {
+        function showFullscreenNotification(title, message, type = 'success', actions = [], playAudio = true) {
             // 移除现有全屏通知
             const existingFullscreen = document.querySelector('.fullscreen-notification');
             if (existingFullscreen) {
@@ -1338,8 +1338,8 @@
                 navigator.vibrate([200, 100, 200, 100, 200]);
             }
             
-            // 播放通知音频
-            playNotificationAudio();
+            // 播放通知音频（可控）
+            if (playAudio) playNotificationAudio();
             
             // 发送桌面通知
             sendDesktopNotification(title, message);
@@ -2177,9 +2177,9 @@
                         [
                             { text: '✍️ 记录收获', class: 'primary', onclick: "removeFullscreenNotification();document.getElementById('dailyGains').focus();" },
                             { text: '🎈 关闭', class: 'secondary', onclick: 'removeFullscreenNotification();' }
-                        ]
+                        ],
+                        false // 不播放音效
                     );
-                    // 不再播放音效
                 }
                 
                 // 强制触发输入事件以确保界面更新
