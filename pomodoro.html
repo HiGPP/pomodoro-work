@@ -977,6 +977,36 @@
           .task-input input[type="text"] { font-size: 0.95em; }
           .textarea-full { min-height: 60px; font-size: 12px; }
         }
+        
+        .audio-controls {
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .audio-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .audio-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .audio-btn.enabled {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .audio-btn.disabled {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
     </style>
 </head>
 <body>
@@ -1014,6 +1044,13 @@
                 <button class="timer-btn success" onclick="resumeTimer()" id="resumeBtn" style="display: none;">▶️ 继续</button>
                 <button class="timer-btn danger" onclick="stopTimer()" id="stopBtn" style="display: none;">⏹️ 停止</button>
                 <button class="timer-btn" onclick="skipTimer()" id="skipBtn" style="display: none;">⏭️ 跳过</button>
+            </div>
+            
+            <!-- 新增：音乐通知开关 -->
+            <div class="audio-controls">
+                <button class="audio-btn enabled" onclick="toggleAudio()" id="audioBtn">
+                    <span id="audioIcon">🔊</span> <span id="audioText">音乐通知已开启</span>
+                </button>
             </div>
         </div>
         
@@ -1163,6 +1200,7 @@
         // 音频相关变量
         let notificationAudio = null;
         let isAudioPlaying = false;
+        let isAudioEnabled = true; // 新增：音乐通知开关
         
         // 页面加载时初始化
         window.onload = function() {
@@ -1201,7 +1239,7 @@
         function initializeAudio() {
             // 创建音频对象，使用本地文件路径
             // 请将路径替换为您的音频文件路径
-            const audioPath = 'http://music.163.com/song/media/outer/url?id=2726242405.mp3'; // 默认路径，请根据实际情况修改
+            const audioPath =  'http://music.163.com/song/media/outer/url?id=2726242405.mp3'; // 默认路径，请根据实际情况修改
             notificationAudio = new Audio(audioPath);
             notificationAudio.loop = true; // 循环播放
             
@@ -1211,6 +1249,7 @@
         
         // 播放通知音频
         function playNotificationAudio() {
+            if (!isAudioEnabled) return; // 新增：检查开关状态
             if (notificationAudio && !isAudioPlaying) {
                 notificationAudio.play().then(() => {
                     isAudioPlaying = true;
@@ -2658,6 +2697,7 @@ _________________________________________________\n\n`;
         
         // 更新任务选项
         function updateTaskOptions() {
+            if (window.isRestoring) return; // 恢复期间不更新任务选项
             const taskSelects = document.querySelectorAll('.task-select');
             const taskCount = parseInt(document.getElementById('taskCount').value);
             
@@ -2756,6 +2796,8 @@ _________________________________________________\n\n`;
                     completedCount: document.getElementById('completedCount').textContent,
                     totalCount: document.getElementById('totalCount').textContent,
                     avgCompletion: document.getElementById('avgCompletion').textContent,
+                    // 音乐通知状态
+                    isAudioEnabled: isAudioEnabled,
                     // 保存时间
                     savedAt: new Date().toISOString()
                 };
@@ -2784,6 +2826,13 @@ _________________________________________________\n\n`;
                         localStorage.removeItem('pomodoroData');
                         return;
                     }
+                    
+                    // 恢复音乐通知状态
+                    if (typeof data.isAudioEnabled === 'boolean') {
+                        isAudioEnabled = data.isAudioEnabled;
+                        updateAudioButtonDisplay();
+                    }
+                    
                     let hasAsyncRestore = false;
                     if (data.tasks && data.tasks.length > 0) {
                         hasAsyncRestore = true;
@@ -3018,6 +3067,7 @@ _________________________________________________\n\n`;
         
         // 新增：任务输入实时保存
         function handleTaskInput(input) {
+            if (window.isRestoring) return; // 恢复期间不执行自动保存
             updateTaskOptions();
             saveData();
         }
@@ -3047,6 +3097,31 @@ _________________________________________________\n\n`;
         function hideLoadingMask() {
             const mask = document.getElementById('loadingMask');
             if (mask) mask.style.display = 'none';
+        }
+        
+        // 切换音乐通知开关
+        function toggleAudio() {
+            isAudioEnabled = !isAudioEnabled;
+            updateAudioButtonDisplay();
+            showNotification(isAudioEnabled ? '✅ 音乐通知已开启' : '🔇 音乐通知已关闭', isAudioEnabled ? 'success' : 'info');
+            saveData(); // 保存状态
+        }
+        
+        // 更新音乐按钮显示
+        function updateAudioButtonDisplay() {
+            const audioBtn = document.getElementById('audioBtn');
+            const audioIcon = document.getElementById('audioIcon');
+            const audioText = document.getElementById('audioText');
+            
+            if (isAudioEnabled) {
+                audioIcon.textContent = '🔊';
+                audioText.textContent = '音乐通知已开启';
+                audioBtn.className = 'audio-btn enabled';
+            } else {
+                audioIcon.textContent = '🔇';
+                audioText.textContent = '音乐通知已关闭';
+                audioBtn.className = 'audio-btn disabled';
+            }
         }
     </script>
 </body>
